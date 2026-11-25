@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SignalScope report</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; }
+    body { margin: 0 auto; max-width: 1200px; padding: 2rem; color: #172033; }
+    h1, h2 { color: #102a43; }
+    section { margin: 2rem 0; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #d9e2ec; padding: .6rem; text-align: left; }
+    th { background: #f0f4f8; }
+    .risk { border-left: 4px solid #d64545; margin: .75rem 0; padding: .75rem 1rem; background: #fff5f5; }
+    .severity { font-weight: 700; }
+    .graph { overflow-x: auto; padding: 1rem; border: 1px solid #d9e2ec; }
+    .muted { color: #52606d; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <h1>SignalScope report</h1>
+  <section>
+    <h2>Receiver map</h2>
+    <table>
+      <thead><tr><th>Sender model</th><th>Signal</th><th>Receiver</th><th>Kind</th><th>Location</th></tr></thead>
+      <tbody>
+      {% for receiver in receivers %}
+        <tr>
+          <td>{{ receiver.sender }}</td>
+          <td>{{ receiver.signal }}</td>
+          <td>{{ receiver.receiver }}</td>
+          <td>{% if receiver.is_live %}Live{% else %}Static{% endif %}{% if receiver.is_async %}, async{% endif %}</td>
+          <td>{{ receiver.file|default:"unknown" }}{% if receiver.line %}:{{ receiver.line }}{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted">No receivers found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Traced signal chain</h2>
+    <div class="graph mermaid">{{ mermaid_graph }}</div>
+  </section>
+
+  <section>
+    <h2>Receiver timings and queries</h2>
+    <table>
+      <thead><tr><th>Receiver</th><th>Signal</th><th>Depth</th><th>Duration (ms)</th><th>Queries</th><th>Query time (ms)</th><th>Instance</th></tr></thead>
+      <tbody>
+      {% for item in trace %}
+        <tr>
+          <td>{{ item.receiver }}</td>
+          <td>{{ item.signal }}</td>
+          <td>{{ item.depth }}</td>
+          <td>{{ item.duration_ms|floatformat:2 }}</td>
+          <td>{{ item.query_count }}</td>
+          <td>{{ item.query_time_ms|floatformat:2 }}</td>
+          <td>{{ item.instance }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="muted">No runtime trace captured.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Risks</h2>
+    {% for risk in risks %}
+      <div class="risk">
+        <span class="severity">{{ risk.severity }} · {{ risk.code }}</span>
+        <div>{{ risk.message }}</div>
+        <div class="muted">{{ risk.location }}</div>
+      </div>
+    {% empty %}
+      <p class="muted">No risks detected.</p>
+    {% endfor %}
+  </section>
+  <script>mermaid.initialize({ startOnLoad: true, securityLevel: "strict" });</script>
+</body>
+</html>
